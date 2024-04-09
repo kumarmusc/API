@@ -7,7 +7,8 @@
     "express-rate-limit": "^7.2.0",
     "fetch-retry": "^6.0.0",
     "node-cron": "^3.0.3",
-    "node-fetch": "^2.7.0"
+    "node-fetch": "^2.7.0",
+    "node-schedule": "^2.1.1"
   },
   "scripts": {
     "start": "node server.js"

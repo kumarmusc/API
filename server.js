@@ -1,8 +1,9 @@
 // Import necessary modules
 const express = require('express');
 const cors = require('cors');
+const schedule = require('node-schedule');
 const config = require('./config.json');
-const { getLastHourStartTimeEpoch, getLastHourEndTimeEpoch, getYesterdayEpochTime, getMinusSevenDaysEpochTime, getMinusThirtyDaysEpochTime, getYesterdayDate, getMinusThirtyDaysDateFromYesterday, getMinusSevenDaysDateFromYesterday, fetchDataWithRetry } = require('./utils');
+const { getLastHourStartTimeEpoch, getLastHourEndTimeEpoch, getYesterdayEpochTime, getMinusSevenDaysEpochTime, getMinusThirtyDaysEpochTime, getYesterdayDate, getMinusThirtyDaysDateFromYesterday, getMinusSevenDaysDateFromYesterday, getCurrentDateTime, fetchDataWithRetry } = require('./utils');
 
 // Initialize Express app
 const app = express();
@@ -16,9 +17,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 const { apiKey, sensorindexupc, sensorindexhsc, upcLatitude, upcLongitude, hscLatitude, hscLongitude } = config;
+
 const headers = {
   'X-API-Key': apiKey
 };
+
 let purpleAirDataUPC = null;
 let purpleAirDataHSC = null;
 let purpleAirData12HrUPC = null;
@@ -33,13 +36,15 @@ let past7dayWeatherUPC = null;
 let past7dayWeatherHSC = null;
 let past30dayWeatherUPC = null;
 let past30dayWeatherHSC = null;
+let currentWeatherUPC = null;
+let currentWeatherHSC = null;
 
 async function fetchDataFromPurpleAirUPC() {
   try {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexupc}/?fields=pm2.5,pm2.5_10minute,pm2.5_30minute,pm2.5_60minute,pm2.5_6hour,pm2.5_24hour,pm2.5_1week,primary_id_a,primary_key_a,primary_id_b,primary_key_b,secondary_id_a,secondary_key_a,secondary_id_b,secondary_key_b,channel_flags_auto,channel_flags_manual,temperature_a,hardware,firmware_version,rssi,firmware_upgrade,firmware_version,pm2.5_10minute,pm2.5_30minute,pm2.5_60minute,pm2.5_6hour,pm2.5_24hour,pm2.5_1week`;
     const options = { headers };
     purpleAirDataUPC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 10Minute UPC data fetched successfully');
+    console.log(`${getCurrentDateTime()}: PurpleAir 10Minute UPC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching data from PurpleAir API for UPC:', error);
   }
@@ -50,7 +55,7 @@ async function fetchDataFromPurpleAirHSC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexhsc}/?fields=pm2.5,pm2.5_10minute,pm2.5_30minute,pm2.5_60minute,pm2.5_6hour,pm2.5_24hour,pm2.5_1week,primary_id_a,primary_key_a,primary_id_b,primary_key_b,secondary_id_a,secondary_key_a,secondary_id_b,secondary_key_b,channel_flags_auto,channel_flags_manual,temperature_a,hardware,firmware_version,rssi,firmware_upgrade,firmware_version,pm2.5_10minute,pm2.5_30minute,pm2.5_60minute,pm2.5_6hour,pm2.5_24hour,pm2.5_1week`;
     const options = { headers };
     purpleAirDataHSC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 10Minute HSC data fetched successfully');
+    console.log(`${getCurrentDateTime()}: PurpleAir 10Minute HSC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching data from PurpleAir API for HSC:', error);
   }
@@ -63,7 +68,7 @@ async function fetchDataFromPurpleAir12HrUPC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexupc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=60&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData12HrUPC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 12Hr UPC data fetched successfully:');
+    console.log(`${getCurrentDateTime()}: PurpleAir 12Hr UPC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching data from PurpleAir API for UPC (12 hours):', error);
   }
@@ -76,7 +81,7 @@ async function fetchDataFromPurpleAir12HrHSC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexhsc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=60&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData12HrHSC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 12Hr HSC data fetched successfully:');
+    console.log(`${getCurrentDateTime()}: PurpleAir 12Hr HSC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching data from PurpleAir API for HSC (12 hours):', error);
   }
@@ -89,7 +94,7 @@ async function fetchDataFromPurpleAir7DaysUPC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexupc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=1440&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData7DaysUPC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 7 days UPC data fetched successfully:');
+    console.log(`${getCurrentDateTime()}: PurpleAir 7 days UPC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching 7 day data from PurpleAir API for UPC:', error);
   }
@@ -102,7 +107,7 @@ async function fetchDataFromPurpleAir7DaysHSC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexhsc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=1440&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData7DaysHSC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 7 days HSC data fetched successfully');
+    console.log(`${getCurrentDateTime()}: PurpleAir 7 days HSC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching 7 day data from PurpleAir API for HSC:', error);
   }
@@ -115,7 +120,7 @@ async function fetchDataFromPurpleAir30DaysUPC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexupc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=1440&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData30DaysUPC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 30 dayUPC data fetched successfully');
+    console.log(`${getCurrentDateTime()}: PurpleAir 30 dayUPC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching 30 data from PurpleAir API for UPC:', error);
   }
@@ -128,9 +133,31 @@ async function fetchDataFromPurpleAir30DaysHSC() {
     const url = `https://api.purpleair.com/v1/sensors/${sensorindexhsc}/history?start_timestamp=${startTimestamp}&end_timestamp=${endTimestamp}&average=1440&fields=pm2.5_alt`;
     const options = { headers };
     purpleAirData30DaysHSC = await fetchDataWithRetry(url, options);
-    console.log('PurpleAir 30 HSC data fetched successfully');
+    console.log(`${getCurrentDateTime()}: PurpleAir 30 HSC data fetched successfully`);
   } catch (error) {
     console.error('Error fetching 30 data from PurpleAir API for HSC:', error);
+  }
+}
+
+async function fetchCurrentWeatherUPC() {
+  try {
+    let currentDate = new Date().toJSON().slice(0, 10);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${upcLatitude}&longitude=${upcLongitude}&current=temperature_2m,relative_humidity_2m,is_day,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${currentDate}&end_date=${currentDate}`;
+    currentWeatherUPC = await fetchDataWithRetry(url);
+    console.log(`${getCurrentDateTime()}: Current weather data for UPC fetched successfully`);
+  } catch (error) {
+    console.error('Error fetching current weather data from openmeteo API for UPC:', error);
+  }
+}
+
+async function fetchCurrentWeatherHSC() {
+  try {
+    let currentDate = new Date().toJSON().slice(0, 10);
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${hscLatitude}&longitude=${hscLongitude}&current=temperature_2m,relative_humidity_2m,is_day,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${currentDate}&end_date=${currentDate}`;
+    currentWeatherHSC = await fetchDataWithRetry(url);
+    console.log(`${getCurrentDateTime()}: Current weather data for UPC fetched successfully`);
+  } catch (error) {
+    console.error('Error fetching current weather data from openmeteo API for HSC:', error);
   }
 }
 
@@ -138,7 +165,7 @@ async function fetchUpcomingWeatherUPC() {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${upcLatitude}&longitude=${upcLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles`;
     upcomingWeatherUPC = await fetchDataWithRetry(url);
-    console.log('upcoming weather data for UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: upcoming weather data for UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching upcoming weather data from openmeteo API for UPC:', error);
   }
@@ -148,7 +175,7 @@ async function fetchUpcomingWeatherHSC() {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${hscLatitude}&longitude=${hscLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles`;
     upcomingWeatherHSC = await fetchDataWithRetry(url);
-    console.log('upcoming weather data for UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: upcoming weather data for UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching upcoming weather data from openmeteo API for HSC:', error);
   }
@@ -160,12 +187,11 @@ async function fetchPastsevenDayWeatherUPC() {
     const toDate = getYesterdayDate();
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${upcLatitude}&longitude=${upcLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${fromDate}&end_date=${toDate}`;
     past7dayWeatherUPC = await fetchDataWithRetry(url);
-    console.log('weather data for 7 days UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: weather data for 7 days UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching 7 data from openmeteo API for UPC:', error);
   }
 }
-
 
 async function fetchPastsevenDayWeatherHSC() {
   try {
@@ -173,7 +199,7 @@ async function fetchPastsevenDayWeatherHSC() {
     const toDate = getYesterdayDate();
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${hscLatitude}&longitude=${hscLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${fromDate}&end_date=${toDate}`;
     past7dayWeatherHSC = await fetchDataWithRetry(url);
-    console.log('weather data for 7 days UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: weather data for 7 days UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching 7 data from openmeteo API for HSC:', error);
   }
@@ -185,12 +211,11 @@ async function fetchPastthirtyDayWeatherUPC() {
     const toDate = getYesterdayDate();
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${upcLatitude}&longitude=${upcLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${fromDate}&end_date=${toDate}`;
     past30dayWeatherUPC = await fetchDataWithRetry(url);
-    console.log('weather data for 30 days UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: weather data for 30 days UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching 30 data from openmeteo API for UPC:', error);
   }
 }
-
 
 async function fetchPastthirtyDayWeatherHSC() {
   try {
@@ -198,12 +223,11 @@ async function fetchPastthirtyDayWeatherHSC() {
     const toDate = getYesterdayDate();
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${hscLatitude}&longitude=${hscLongitude}&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&wind_speed_unit=ms&timeformat=unixtime&timezone=America%2FLos_Angeles&start_date=${fromDate}&end_date=${toDate}`;
     past30dayWeatherHSC = await fetchDataWithRetry(url);
-    console.log('weather data for 30 days UPC fetched successfully ');
+    console.log(`${getCurrentDateTime()}: weather data for 30 days UPC fetched successfully`);
   } catch (error) {
     console.error('Error fetching 30 data from openmeteo API for HSC:', error);
   }
 }
-
 
 // Fetch data initially when the server starts
 async function initialDataFetch() {
@@ -216,6 +240,8 @@ async function initialDataFetch() {
     await fetchDataFromPurpleAir7DaysHSC();
     await fetchDataFromPurpleAir30DaysUPC();
     await fetchDataFromPurpleAir30DaysHSC();
+    await fetchCurrentWeatherUPC();
+    await fetchCurrentWeatherHSC();
     await fetchUpcomingWeatherUPC();
     await fetchUpcomingWeatherHSC();
     await fetchPastsevenDayWeatherUPC();
@@ -224,7 +250,7 @@ async function initialDataFetch() {
     await fetchPastthirtyDayWeatherHSC();
   } catch (error) {
     console.error('Error fetching initial data:', error);
-    process.exit(1); 
+    process.exit(1);
   }
 }
 
@@ -303,6 +329,24 @@ initialDataFetch().then(() => {
     }
   });
 
+  app.get('/api/weather/upc/currentweather', async (req, res) => {
+    try {
+      res.json(currentWeatherUPC);
+    } catch (error) {
+      console.error('Error sending upcoming weather for UPC:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  app.get('/api/weather/hsc/currentweather', async (req, res) => {
+    try {
+      res.json(currentWeatherHSC);
+    } catch (error) {
+      console.error('Error sending upcoming weather for UPC:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
   app.get('/api/weather/upc/upcomingweather', async (req, res) => {
     try {
       res.json(upcomingWeatherUPC);
@@ -358,21 +402,47 @@ initialDataFetch().then(() => {
     }
   });
 
-
-
   // Start the server
   app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server started running at ${getCurrentDateTime()} on port ${PORT}`);
   });
-
-  setInterval(fetchDataFromPurpleAirUPC, 10 * 60 * 1000); // 10 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAirHSC, 10 * 60 * 1000); // 10 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir12HrUPC, 30 * 60 * 1000); // 20 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir12HrHSC, 31 * 60 * 1000); // 21 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir7DaysUPC, 60 * 60 * 1000); // 20 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir7DaysHSC, 60 * 60 * 1000); // 21 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir30DaysUPC, 30 * 60 * 1000); // 21 minutes in milliseconds
-  setInterval(fetchDataFromPurpleAir30DaysHSC, 30 * 60 * 1000); // 21 minutes in milliseconds
+  //
+  schedule.scheduleJob('*/5 * * * *', async () => {
+    fetchDataFromPurpleAirUPC();
+  });
+  schedule.scheduleJob('10 */5 * * * *', async () => {
+    fetchDataFromPurpleAirHSC();
+  });
+  schedule.scheduleJob('20 */30 * * * *', async () => {
+    fetchDataFromPurpleAir12HrUPC();
+    fetchUpcomingWeatherUPC();
+  });
+  schedule.scheduleJob('30 */30 * * * *', async () => {
+    fetchDataFromPurpleAir12HrHSC();
+    fetchUpcomingWeatherHSC();
+  });
+  schedule.scheduleJob('1 */2 * * *', async () => {
+    fetchDataFromPurpleAir7DaysUPC();
+    fetchPastsevenDayWeatherUPC();
+  });
+  schedule.scheduleJob('30 1 */2 * * *', async () => {
+    
+    fetchDataFromPurpleAir7DaysHSC();
+    fetchPastsevenDayWeatherHSC();
+  });
+  schedule.scheduleJob('1 */3 * * *', async () => {
+    
+    fetchDataFromPurpleAir30DaysUPC();
+    fetchPastthirtyDayWeatherUPC();
+  });
+  schedule.scheduleJob('1 */3 * * *', async () => {
+    fetchDataFromPurpleAir30DaysHSC();
+    fetchPastthirtyDayWeatherHSC();
+  });
+  schedule.scheduleJob('*/15 * * * *', async () => {
+    fetchCurrentWeatherUPC();
+    fetchCurrentWeatherHSC();
+  });
 
 }).catch(err => {
   console.error('Error in initial data fetch:', err);

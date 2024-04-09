@@ -64,6 +64,13 @@ function getMinusThirtyDaysDateFromYesterday() {
   return minusThirtyDays.toISOString().slice(0, 10);
 }
 
+function getCurrentDateTime() {
+  const currentDate = new Date();
+  const formattedDate = currentDate.toISOString().split('T')[0];
+  const formattedTime = currentDate.toTimeString().split(' ')[0];
+  return formattedDate + ' ' + formattedTime;
+}
+
 async function fetchDataWithRetry(url, options = {}, retryCount = 3) {
   try {
     const response = await fetch(url, options);
@@ -93,5 +100,6 @@ module.exports = {
   getYesterdayDate,
   getMinusThirtyDaysDateFromYesterday,
   getMinusSevenDaysDateFromYesterday,
+  getCurrentDateTime,
   fetchDataWithRetry
 };
