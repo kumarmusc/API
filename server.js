@@ -426,12 +426,12 @@ initialDataFetch().then(() => {
     fetchPastsevenDayWeatherUPC();
   });
   schedule.scheduleJob('30 1 */2 * * *', async () => {
-    
+
     fetchDataFromPurpleAir7DaysHSC();
     fetchPastsevenDayWeatherHSC();
   });
   schedule.scheduleJob('1 */3 * * *', async () => {
-    
+
     fetchDataFromPurpleAir30DaysUPC();
     fetchPastthirtyDayWeatherUPC();
   });
