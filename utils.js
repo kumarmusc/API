@@ -1,3 +1,4 @@
+const fetch = require("node-fetch");
 
 function getLastHourEndTimeEpoch() {
   const now = new Date();
@@ -15,13 +16,13 @@ function getLastHourStartTimeEpoch() {
   lastHourStart.setMinutes(0);
   lastHourStart.setSeconds(0);
   lastHourStart.setMilliseconds(0);
-  lastHourStart.setHours(lastHourStart.getHours() - 13);
+  lastHourStart.setHours(lastHourStart.getHours() - 14);
   return Math.floor(lastHourStart.getTime() / 1000).toString();
 }
 
 function getYesterdayEpochTime() {
   const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
+  yesterday.setDate(yesterday.getDate() - 2);
   yesterday.setHours(23, 59, 59, 999);
   return Math.floor(yesterday.getTime() / 1000);
 }
